@@ -1,4 +1,4 @@
-﻿//在每个例子下面需要添加，这一段宏阻塞，否则加载不出图像
+//如果不是用cmake编译，而是用vs编译的，需要加这一段宏阻塞，否则加载不出图像
 #include <vtkAutoInit.h>
 VTK_MODULE_INIT(vtkRenderingOpenGL2);
 VTK_MODULE_INIT(vtkInteractionStyle); ///
@@ -14,15 +14,9 @@ VTK_MODULE_INIT(vtkRenderingVolumeOpenGL2);
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 
-#include <array>
-
 int main(int, char* [])
 {
     vtkNew<vtkNamedColors> colors;
-
-    // Set the background color.
-    std::array<unsigned char, 4> bkg{ {26, 51, 102, 255} };
-    colors->SetColor("BkgColor", bkg.data());
 
     // This creates a polygonal cylinder model with eight circumferential facets
     // (i.e, in practice an octagonal prism).
@@ -40,8 +34,6 @@ int main(int, char* [])
     // Here we set its color and rotate it around the X and Y axes.
     vtkNew<vtkActor> cylinderActor;
     cylinderActor->SetMapper(cylinderMapper);
-    cylinderActor->GetProperty()->SetColor(
-        colors->GetColor4d("Tomato").GetData());
     cylinderActor->RotateX(30.0);
     cylinderActor->RotateY(-45.0);
 
