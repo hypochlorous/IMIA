@@ -27,9 +27,9 @@
 #include <vtkPointPicker.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkMarchingCubes.h>
+#include <qdebug.h>
 
-
-double MainWindow::vector[3] = { 0,0,0 };
+double MainWindow::vector[3] = { 66,0,0 };
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -52,6 +52,15 @@ MainWindow::MainWindow(QWidget *parent)
     iread->GetOutput()->SetOrigin(0, 0, 0);
     image_bone->DeepCopy(iread->GetOutput());
 
+    vtkNew<vtkSTLReader>sread;
+    sread->SetFileName("E:\\PM\\SurgPlan\\Data\\201_final.stl");
+    sread->Update();
+    
+    vtkNew<vtkPolyDataMapper>smapper;
+    smapper->SetInputData(sread->GetOutput());
+    prosthesis=vtkSmartPointer<vtkActor>::New();
+    prosthesis->SetMapper(smapper);
+
     //面渲染
     vtkNew<vtkMarchingCubes> MC;
     MC->SetInputConnection(iread->GetOutputPort());
@@ -61,7 +70,7 @@ MainWindow::MainWindow(QWidget *parent)
     boneMapper->SetInputData(MC->GetOutput());
     boneMapper->ScalarVisibilityOff();
     bone = vtkSmartPointer< vtkActor >::New();
-    //bone->SetPosition(0,0,0);
+    bone->SetPosition(0,0,0);
     bone->SetMapper(boneMapper);
    
 
@@ -72,8 +81,10 @@ MainWindow::MainWindow(QWidget *parent)
     Axes->SetYAxisLabelText("y");
     Axes->SetZAxisLabelText("z");
 
+
     //Add the volume to the scene
     renderer->AddActor(bone);
+    renderer->AddActor(prosthesis);
     renderer->AddActor(Axes);
     renderer->GetActiveCamera()->SetViewUp(0,0,1);
 
@@ -101,36 +112,36 @@ void MainWindow::on_pushButton_clicked()
     open_stl(selectFilePath.toUtf8()) ;
 }
 
-void MainWindow::open_stl(const char *f)
+void MainWindow::open_stl(const char* f)
 {
-//    if(!stlreader)
-//     {
-//        stlreader = vtkSmartPointer<vtkSTLReader>::New();
-//     }
-    vtkSmartPointer<vtkSTLReader> stlreader = vtkSmartPointer<vtkSTLReader>::New();
-     stlreader->SetFileName(f);                               //这里主要，是文件夹哈，不是文件名
-     stlreader->Update();
+    if (!stlreader)
+    {
+        stlreader = vtkSmartPointer<vtkSTLReader>::New();
+    }
+
+    stlreader->SetFileName(f);                               //这里主要，是文件夹哈，不是文件名
+    stlreader->Update();
 
     //添加映射器
-     vtkSmartPointer<vtkPolyDataMapper> stlMapper =vtkSmartPointer<vtkPolyDataMapper>::New();
-     stlMapper->SetInputConnection(stlreader->GetOutputPort());
+    vtkSmartPointer<vtkPolyDataMapper> stlMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    stlMapper->SetInputConnection(stlreader->GetOutputPort());
     //添加演员
-     vtkSmartPointer<vtkActor> stlActor =vtkSmartPointer<vtkActor>::New();
-     stlActor->SetMapper(stlMapper);
-     double center1[3];
-     std::copy(stlActor->GetCenter(),stlActor->GetCenter()+3,center1);
-     std::cout << center1[0] << "," << center1[1] << "," << center1[2] <<std::endl;
-     iren->SetRenderWindow(renWin);
-     renderer->AddActor(stlActor);
-     stlActor->SetPosition(0, 0, 0);
-     vtkSmartPointer<StyleTrackballActor> style = vtkSmartPointer <StyleTrackballActor>::New();
-     //style->SetInteractor(stlActor);
-     style->ActorA = stlActor;
-     iren->SetInteractorStyle(style);
-     //iren->SetInteractorStyle(nullptr);
-     renWin->Render();
-     iren->Initialize();
-     //iren->Start();
+    vtkSmartPointer<vtkActor> stlActor = vtkSmartPointer<vtkActor>::New();
+    stlActor->SetMapper(stlMapper);
+    double center1[3];
+    std::copy(stlActor->GetCenter(), stlActor->GetCenter() + 3, center1);
+    std::cout << center1[0] << "," << center1[1] << "," << center1[2] << std::endl;
+    iren->SetRenderWindow(renWin);
+    renderer->AddActor(stlActor);
+    stlActor->SetPosition(0, 0, 0);
+    vtkSmartPointer<StyleTrackballActor> style = vtkSmartPointer <StyleTrackballActor>::New();
+    //style->SetInteractor(stlActor);
+    style->ActorA = stlActor;
+    iren->SetInteractorStyle(style);
+    //iren->SetInteractorStyle(nullptr);
+    renWin->Render();
+    iren->Initialize();
+    //iren->Start();
 }
 
 void MainWindow::on_pushButton_2_clicked()
@@ -156,7 +167,7 @@ void MainWindow::on_pushButton_4_clicked()
     actorCollection->InitTraversal();
     for (int i=0;i<num;++i)
     {
-        //移除队尾actor
+        //移除栈顶actor
          actor = actorCollection->GetNextActor();
     }
     renderer->RemoveActor(actor);
@@ -208,7 +219,7 @@ void MainWindow::on_pushButton_5_clicked()
     vtkNew<vtkInteractorStyleRubberBandPick> style;
     renderWindowInteractor->SetInteractorStyle(style);
 
-    // 添加actor到渲染器，设置背景颜色，然后启动渲染循环
+    // 添加actor到渲染器，然后刷新渲染 启动循环
     renderer->AddActor(actor);
 
 
@@ -225,19 +236,28 @@ void MainWindow::on_pushButton_6_clicked()
     iread->Update();
     imageB->DeepCopy(iread->GetOutput());
 
-    cout<<vector[0]<<" "<<vector[1]<<" "<<vector[2]<<endl;
-//    如果太小就乘10
-    while ((abs(vector[0]) + abs(vector[1]) + abs(vector[2])) < 10) {
-        for (int i = 0; i < 3; ++i) {
-            vector[i] *= 10;
-        }
+    this->prosthesis->GetPosition(vector);
+    qDebug()<<vector[0]<<" "<<vector[1]<<" "<<vector[2];
+
+    //还没有实现normalize,需要将Actor的位移扩大10/3对应Volume
+    for (int i = 0; i < 3; ++i) {
+        vector[i] *= 3.3333333;
     }
+////    如果太小就缩放10倍
+//    while ((abs(vector[0]) + abs(vector[1]) + abs(vector[2])) < 10) {
+//        for (int i = 0; i < 3; ++i) {
+//            vector[i] *= 10;
+//        }
+//        if (abs(vector[0]) + abs(vector[1]) + abs(vector[2]) == 0) {
+//            break;
+//        }
+//    }
     clip_res=clip_func(image_bone,imageB,vector);
     show_images(image_bone, clip_res);
 
 }
 
-
+//picker
 void MainWindow::on_pushButton_7_clicked()
 {
 
@@ -274,19 +294,29 @@ void MainWindow::on_pushButton_9_clicked()
     //在style中对vector赋值   
     //double* res;
     //res= style->GetVector();
-    cout << vector[0] << endl;
-    cout << vector[1] << endl;
-    cout << vector[2] << endl;
 
     //iren->Initialize();
     //renWin->Render();
 
 }
 
+//测试
+void MainWindow::on_pushButton_10_clicked()
+{
+    this->prosthesis->GetPosition(vector);
+    qDebug() << vector[0] << " " << vector[1] << " " << vector[2];
+}
+
 
 vtkNew<vtkImageData> MainWindow::clip_func(vtkImageData* imageA, vtkImageData* imageB, double vector[3])
 {
     int dimensions[3], dimensions2[3];
+    
+    //qDebug() << dimensions2[0] << " " << dimensions2[1] << " " << dimensions2[2];
+    //double space[3];
+    //imageB->GetSpacing(space);
+    //qDebug() << space[0] << " " << space[1] << " " << space[2];
+
     imageA->GetDimensions(dimensions);
     imageB->GetDimensions(dimensions2);
 
@@ -402,36 +432,26 @@ void MainWindow::show_images(vtkImageData* imageA, vtkImageData* imageB)
 
     vtkNew<vtkImageData>clip_result;
 
-    //leftMapper->SetInputData(clip_result);
-
-
     leftVolume->SetPosition(0, 0, 0);
-    leftRender->AddVolume(leftVolume);
     leftVolume2->SetPosition(0, 0, 0);
 
-
+    leftRender->AddVolume(leftVolume);
     leftRender->AddVolume(leftVolume2);
     //leftRender->AddVolume(rightVolume);
     leftRender->SetBackground(1, 1, 0);
     leftRender->SetViewport(leftView);
 
 
-    //vtkNew<vtkRenderer> rightRender =
-    //    vtkNew<vtkRenderer>::New();
     rightRender->AddVolume(rightVolume);
     rightRender->SetBackground(0, 1, 0);
     rightRender->SetViewport(rightView);
-    ///
+
 
 
     double position[3];
 
-    //std::copy(style->vector, style->vector + 3, position);
-
-
     leftVolume->GetPosition(position);
     rightVolume->SetPosition(position);
-
 
     leftRender->GetActiveCamera()->SetPosition(0, -1, 0);
     leftRender->GetActiveCamera()->SetFocalPoint(0, 0, 0);
@@ -445,3 +465,28 @@ void MainWindow::show_images(vtkImageData* imageA, vtkImageData* imageB)
     rwi->Start();
     return;
 }
+
+vtkNew<vtkImageData> MainWindow::normalize(vtkImageData* image)
+{
+    //处理imageA的spacing为[1,1,1]
+    vtkNew<vtkImageData>image_nor;
+    image_nor->DeepCopy(image);
+
+    double newSpacing[3] = { 1.0, 1.0, 1.0 }; // 新的间距
+    int extent[6]; // 旧的extent
+    image->GetExtent(extent);
+
+    int newDimension[3];
+    newDimension[0] = (extent[1] - extent[0] + 1) * (image->GetSpacing()[0] / newSpacing[0]);
+    newDimension[1] = (extent[3] - extent[2] + 1) * (image->GetSpacing()[1] / newSpacing[1]);
+    newDimension[2] = (extent[5] - extent[4] + 1) * (image->GetSpacing()[2] / newSpacing[2]);
+    
+    
+    image_nor->SetSpacing(newSpacing);
+    image_nor->SetExtent(0, newDimension[0] - 1, 0, newDimension[1] - 1, 0, newDimension[2] - 1);
+    //调用Modified()方法会标记对象为已修改，从而在下一次渲染时重新计算对象的数据,以确保与对象的状态匹配。
+    image_nor->Modified();
+
+    return image_nor;
+}
+

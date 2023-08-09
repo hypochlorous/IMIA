@@ -36,6 +36,8 @@ public:
     vtkSmartPointer<vtkVolume> volume;
 
     vtkSmartPointer<vtkActor> bone;
+    vtkSmartPointer<vtkActor>prosthesis;
+
     double center[3];
     vtkSmartPointer<vtkPolyData> trapeziumpolydata;
     vtkSmartPointer<vtkStripper> boneStripper;
@@ -50,7 +52,7 @@ public:
 
     void show_images(vtkImageData* imageA, vtkImageData* imageB);
 
-
+    vtkNew<vtkImageData>normalize(vtkImageData* image);
 
 public slots:
     void open_stl(const char *f);
@@ -79,6 +81,7 @@ private slots:
 
     void on_pushButton_9_clicked();
 
+    void on_pushButton_10_clicked();
 private:
     Ui::MainWindow *ui;
     vtkSmartPointer<vtkSTLReader> stlreader = nullptr;
